@@ -32,7 +32,6 @@ public class TelegramBot extends TelegramLongPollingBot {
         try {
             this.execute(new SetMyCommands(listOfCommands, new BotCommandScopeDefault(), null));
         } catch (TelegramApiException e) {
-            e.printStackTrace();
         }
     }
 
@@ -51,7 +50,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                     break;
                 case "/join":
                     if (!activeCommands.containsKey(chatId) || !activeCommands.get(chatId).equals("/join")) {
-                        activeCommands.put(chatId, "/join"); // Сохраняем активную команду
+                        activeCommands.put(chatId, "/join");
                         sendResponse(chatId, "Введите идентификатор комнаты:");
                     }
                     break;
@@ -60,9 +59,8 @@ public class TelegramBot extends TelegramLongPollingBot {
                     break;
                 default:
                     if (activeCommands.containsKey(chatId) && activeCommands.get(chatId).equals("/join")) {
-                        // Пользователь вводит идентификатор комнаты
                         joinRoom(chatId, messageText);
-                        activeCommands.remove(chatId); // Удаляем активную команду
+                        activeCommands.remove(chatId);
                     } else {
                         sendMessage(chatId, "Неизвестная команда. Используйте /start для начала.");
                     }
@@ -108,7 +106,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             QuizRoom room = quizRooms.get(roomId);
             room.addParticipant(userId);
             sendResponse(userId, "Вы присоединились к комнате с идентификатором " + roomId);
-            sendParticipantsList(userId, room); // Отправляем список участников
+            sendParticipantsList(userId, room);
         } else {
             sendResponse(userId, "Комната с указанным идентификатором не найдена.");
         }
@@ -116,15 +114,12 @@ public class TelegramBot extends TelegramLongPollingBot {
 
     private String getParticipantName(long participantId) {
         try {
-            // Создаем запрос для получения информации о пользователе по его идентификатору
             GetChatMember getChatMember = new GetChatMember();
             getChatMember.setChatId(String.valueOf(participantId));
             getChatMember.setUserId(participantId);
 
-            // Отправляем запрос и получаем информацию о пользователе
             ChatMember chatMember = execute(getChatMember);
 
-            // Возвращаем имя пользователя
             return chatMember.getUser().getFirstName();
         } catch (TelegramApiException e) {
             e.printStackTrace();
@@ -137,7 +132,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         Map<Long, Integer> participants = room.getParticipants();
         for (Map.Entry<Long, Integer> entry : participants.entrySet()) {
             long participantId = entry.getKey();
-            String participantName = getParticipantName(participantId); // Получаем имя участника по идентификатору
+            String participantName = getParticipantName(participantId);
             messageBuilder.append(participantName).append("\n");
         }
         sendMessage(userId, messageBuilder.toString());
@@ -150,25 +145,6 @@ public class TelegramBot extends TelegramLongPollingBot {
         try {
             execute(message);
         } catch (TelegramApiException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public class QuizRoom {
-        private final long creatorId;
-        private final Map<Long, Integer> userScores = new HashMap<>();
-
-        public QuizRoom(long creatorId) {
-            this.creatorId = creatorId;
-        }
-
-        public void addParticipant(long userId) {
-            userScores.put(userId, 0);
-        }
-
-        // Метод для получения списка участников
-        public Map<Long, Integer> getParticipants() {
-            return userScores;
         }
     }
 }
