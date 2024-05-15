@@ -11,23 +11,14 @@ public class MessageFromUser {
         this.name = name;
     }
 
-    /**
-     * Получение id чата
-     */
     public long getChatId() {
         return chatId;
     }
 
-    /**
-     * Получение текста сообщения
-     */
     public String getMessage() {
         return message;
     }
 
-    /**
-     * Получение имя пользователя
-     */
     public String getUserName() {
         return name;
     }

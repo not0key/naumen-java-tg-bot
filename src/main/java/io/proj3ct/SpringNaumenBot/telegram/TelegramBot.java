@@ -28,7 +28,9 @@ public class TelegramBot extends TelegramLongPollingBot implements Bot {
         this.botLogic = botLogic;
         List<BotCommand> listOfCommands = new ArrayList<>();
         listOfCommands.add(new BotCommand("/start", "Это телеграмм бот для проведения онлайн викторин."));
-        listOfCommands.add(new BotCommand("/help", "Справка"));
+        listOfCommands.add(new BotCommand("/create", "Создать комнату для проведения викторины."));
+        listOfCommands.add(new BotCommand("/join", "Присоединится к комнате для проведения викторины."));
+        listOfCommands.add(new BotCommand("/help", "Справка."));
         try {
             this.execute(new SetMyCommands(listOfCommands, new BotCommandScopeDefault(), null));
         } catch (TelegramApiException e) {
