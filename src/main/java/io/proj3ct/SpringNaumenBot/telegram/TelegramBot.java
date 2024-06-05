@@ -5,6 +5,7 @@ import io.proj3ct.SpringNaumenBot.bot.BotConfig;
 import io.proj3ct.SpringNaumenBot.bot.BotLogic;
 import io.proj3ct.SpringNaumenBot.domains.message.MessageFromUser;
 import io.proj3ct.SpringNaumenBot.domains.message.MessageToUser;
+import io.proj3ct.SpringNaumenBot.services.UserService;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
@@ -28,6 +29,7 @@ public class TelegramBot extends TelegramLongPollingBot implements Bot {
         this.botLogic = botLogic;
         List<BotCommand> listOfCommands = new ArrayList<>();
         listOfCommands.add(new BotCommand("/start", "Это телеграмм бот для проведения онлайн викторин."));
+        listOfCommands.add(new BotCommand("/quiz", "Это телеграмм бот для проведения онлайн викторин."));
         listOfCommands.add(new BotCommand("/create", "Создать комнату для проведения викторины."));
         listOfCommands.add(new BotCommand("/join", "Присоединится к комнате для проведения викторины."));
         listOfCommands.add(new BotCommand("/startquiz", "Начать викторину."));
