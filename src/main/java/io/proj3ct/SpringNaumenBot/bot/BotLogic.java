@@ -38,6 +38,11 @@ public class BotLogic {
                 Long quizId = Long.parseLong(messageText.split(" ")[1]);
                 return botMessageCreator.createMessageStartQuiz(chatId, quizId);
             }
+            case COMMAND_ANSWER -> {
+                Long questionId = Long.parseLong(messageText.split(" ")[1]);
+                String answer = messageText.split(" ")[2];
+                return botMessageCreator.createMessageCheckAnswer(chatId, questionId, answer);
+            }
             case COMMAND_HELP -> {
                 return botMessageCreator.createMessageAccessButtons(chatId);
             }

@@ -58,6 +58,21 @@ public class BotMessageCreator {
     }
 
     /**
+     * Создается сообщение для пользователя о начале викторины.
+     */
+    public MessageToUser createMessageCheckAnswer(long chatId, Long questionId, String userAnswer) {
+        Question question = questionService.getQuestionById(questionId);
+        if (question == null) {
+            return new MessageToUser(chatId, "Недопустимый идентификатор вопроса.");
+        }
+        if (question.getCorrectAnswer().equalsIgnoreCase(userAnswer)) {
+            return new MessageToUser(chatId, "Верно!");
+        } else {
+            return new MessageToUser(chatId, "Неверно! Правильный ответ: " + question.getCorrectAnswer());
+        }
+    }
+
+    /**
      * Создается сообщение для пользователя с текстом о доступных командах бота.
      */
     public MessageToUser createMessageAccessButtons(long chatId) {
