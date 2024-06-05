@@ -28,6 +28,7 @@ public class BotLogic {
         long chatId = messageFromUser.getChatId();
 
         String[] messageParts = messageText.split(" ");
+        String command = messageParts[0];
 
         switch (messageText) {
             case COMMAND_START -> {
@@ -38,13 +39,13 @@ public class BotLogic {
            }
             case COMMAND_START_QUIZ -> {
                 if (messageParts.length < 2) {
-                    return botMessageCreator.createMessageNotFoundCommand(chatId);
+                    return botMessageCreator.createMessageInvalidCommand(chatId, "ihgiwhegioe");
                 }
                 try {
                     Long quizId = Long.parseLong(messageParts[1]);
                     return botMessageCreator.createMessageStartQuiz(chatId, quizId);
                 } catch (NumberFormatException e) {
-                    return botMessageCreator.createMessageNotFoundCommand(chatId);
+                    return botMessageCreator.createMessageInvalidCommand(chatId, "0foeiowhfiowehfio");
                 }
             }
             case COMMAND_ANSWER -> {

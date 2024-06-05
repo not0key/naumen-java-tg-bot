@@ -86,4 +86,8 @@ public class BotMessageCreator {
         String answer = "Команда не найдена";
         return new MessageToUser(chatId, answer);
     }
+
+    public MessageToUser createMessageInvalidCommand(long chatId, String errorMessage) {
+        return new MessageToUser(chatId, "Неверно введена команда: " + errorMessage);
+    }
 }
