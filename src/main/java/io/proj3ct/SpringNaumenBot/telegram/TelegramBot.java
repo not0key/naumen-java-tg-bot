@@ -32,7 +32,7 @@ public class TelegramBot extends TelegramLongPollingBot implements Bot {
         listOfCommands.add(new BotCommand("/quiz", "Это телеграмм бот для проведения онлайн викторин."));
         listOfCommands.add(new BotCommand("/create", "Создать комнату для проведения викторины."));
         listOfCommands.add(new BotCommand("/join", "Присоединится к комнате для проведения викторины."));
-        listOfCommands.add(new BotCommand("/startquiz", "Начать викторину."));
+        listOfCommands.add(new BotCommand("/start_quiz", "Начать викторину."));
         listOfCommands.add(new BotCommand("/help", "Справка."));
         try {
             this.execute(new SetMyCommands(listOfCommands, new BotCommandScopeDefault(), null));
