@@ -3,8 +3,12 @@ package io.proj3ct.SpringNaumenBot.telegram;
 import io.proj3ct.SpringNaumenBot.bot.Bot;
 import io.proj3ct.SpringNaumenBot.bot.BotConfig;
 import io.proj3ct.SpringNaumenBot.bot.BotLogic;
+import io.proj3ct.SpringNaumenBot.domains.User;
 import io.proj3ct.SpringNaumenBot.domains.message.MessageFromUser;
 import io.proj3ct.SpringNaumenBot.domains.message.MessageToUser;
+import io.proj3ct.SpringNaumenBot.services.UserRatingService;
+import io.proj3ct.SpringNaumenBot.services.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
@@ -23,52 +27,69 @@ public class TelegramBot extends TelegramLongPollingBot implements Bot {
 
     private final BotConfig botConfig;
     private final BotLogic botLogic;
+    @Autowired
+    private final UserService userService;
 
-    public TelegramBot(BotConfig botConfig, BotLogic botLogic) {
+    public TelegramBot(BotConfig botConfig, BotLogic botLogic, UserService userService) {
         this.botConfig = botConfig;
         this.botLogic = botLogic;
+        this.userService = userService;
         List<BotCommand> listOfCommands = new ArrayList<>();
-        listOfCommands.add(new BotCommand("/start", "Это телеграмм бот для проведения онлайн викторин."));
-        listOfCommands.add(new BotCommand("/quiz", "Это телеграмм бот для проведения онлайн викторин."));
+        listOfCommands.add(new BotCommand("/start", "Это телеграмм бот для проведения викторин."));
+        listOfCommands.add(new BotCommand("/quiz", "Список доступных тем для викторины."));
         listOfCommands.add(new BotCommand("/start_quiz", "Начать викторину."));
-        listOfCommands.add(new BotCommand("/answer", "Начать викторину."));
+        listOfCommands.add(new BotCommand("/rating", "Рейтинг пользователей."));
         listOfCommands.add(new BotCommand("/help", "Справка."));
         try {
             this.execute(new SetMyCommands(listOfCommands, new BotCommandScopeDefault(), null));
         } catch (TelegramApiException e) {
             throw new RuntimeException(e);
         }
-
     }
 
     @Override
     public void onUpdateReceived(Update update) {
         if (update.hasMessage() && update.getMessage().hasText()) {
-            MessageFromUser message = new MessageFromUser(
-                    update.getMessage().getChatId(),
-                    update.getMessage().getText(),
-                    update.getMessage().getChat().getFirstName()
-            );
+            String text = update.getMessage().getText();
+            Long chatId = update.getMessage().getChatId();
+            String name = update.getMessage().getChat().getFirstName();
+
+            // Проверка, существует ли пользователь с данным chatId
+            User existingUser = userService.getUserByChatId(chatId);
+            if (existingUser == null) {
+                // Пользователь не существует, регистрируем его
+                userService.registerUser(chatId, name);
+            }
+
+            MessageFromUser message = new MessageFromUser(chatId, text, name);
             MessageToUser messageToUser = botLogic.onUpdateReceived(message);
-            if (messageToUser != null) {
-                if (messageToUser.getReplyMarkup() != null) {
-                    sendInlineKeyBoardMessage(messageToUser);
-                } else {
-                    this.sendMessage(messageToUser);
-                }
+            if (messageToUser == null) {
+                return;
+            }
+            if (messageToUser.getReplyMarkup() != null) {
+                sendInlineKeyBoardMessage(messageToUser);
+            } else {
+                this.sendMessage(messageToUser);
             }
         } else if (update.hasCallbackQuery()) {
             CallbackQuery callbackQuery = update.getCallbackQuery();
             String data = callbackQuery.getData();
             long chatId = callbackQuery.getMessage().getChatId();
-            MessageFromUser message = new MessageFromUser(chatId, data, null);
+
+            // Получение имени пользователя при колбэке
+            String name = callbackQuery.getFrom().getFirstName();
+
+            // Проверка, существует ли пользователь с данным chatId
+            User existingUser = userService.getUserByChatId(chatId);
+            if (existingUser == null) {
+                // Пользователь не существует, регистрируем его
+                userService.registerUser(chatId, name);
+            }
+
+            MessageFromUser message = new MessageFromUser(chatId, data, name);
             MessageToUser messageToUser = botLogic.onUpdateReceived(message);
             if (messageToUser != null) {
-                if (messageToUser.getReplyMarkup() != null) {
-                    sendInlineKeyBoardMessage(messageToUser);
-                } else {
-                    this.sendMessage(messageToUser);
-                }
+                this.sendMessage(messageToUser);
             }
         }
     }

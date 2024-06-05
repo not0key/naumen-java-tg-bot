@@ -2,9 +2,13 @@ package io.proj3ct.SpringNaumenBot.bot;
 
 import io.proj3ct.SpringNaumenBot.domains.Question;
 import io.proj3ct.SpringNaumenBot.domains.Quiz;
+import io.proj3ct.SpringNaumenBot.domains.User;
+import io.proj3ct.SpringNaumenBot.domains.UserRating;
 import io.proj3ct.SpringNaumenBot.domains.message.MessageToUser;
 import io.proj3ct.SpringNaumenBot.services.QuestionService;
 import io.proj3ct.SpringNaumenBot.services.QuizService;
+import io.proj3ct.SpringNaumenBot.services.UserRatingService;
+import io.proj3ct.SpringNaumenBot.services.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -29,8 +33,16 @@ public class BotMessageCreator {
     @Autowired
     private final QuestionService questionService;
 
+    @Autowired
+    private final UserRatingService userRatingService;
+
+    @Autowired
+    private final UserService userService;
+
     private final Map<Long, Map<Long, Integer>> userAttempts = new HashMap<>();
     private final Map<Long, Long> userCurrentQuestion = new HashMap<>();
+    private final Map<Long, Integer> earnedPoints = new HashMap<>();
+
 
     public MessageToUser createMessageStartWorkBot(long chatId, String name) {
         String answer = "Привет, " + name + ", это телеграм бот для проведения викторин.\n" +
@@ -102,6 +114,8 @@ public class BotMessageCreator {
             responseText = "Верно!";
             attemptsForUser.remove(questionId);
             userCurrentQuestion.remove(chatId);
+            updateRating(chatId, true); // Обновляем рейтинг пользователя за правильный ответ
+            earnedPoints.put(chatId, earnedPoints.getOrDefault(chatId, 0) + 1); // Увеличиваем количество начисленных очков за викторину
         } else {
             attempts++;
             if (attempts < 3) {
@@ -112,6 +126,7 @@ public class BotMessageCreator {
                 responseText = "Неверно! Правильный ответ: " + question.getCorrectAnswer();
                 attemptsForUser.remove(questionId);
                 userCurrentQuestion.remove(chatId);
+                updateRating(chatId, false); // Не обновляем рейтинг пользователя за неправильный ответ
             }
         }
 
@@ -132,10 +147,28 @@ public class BotMessageCreator {
                     "\nВведите ваш ответ в чат.";
         } else {
             responseText += "\n\nВы ответили на все вопросы в этой викторине.";
+            int earnedPointsForQuiz = earnedPoints.getOrDefault(chatId, 0);
+            responseText += "\n\nЗа прохождение викторины вам начислено " + earnedPointsForQuiz + " очков.";
         }
 
         return new MessageToUser(chatId, responseText);
     }
+
+    public MessageToUser createMessageRating(long chatId) {
+        List<UserRating> topRatings = userRatingService.getTopRatings(10); // Получение топ-10 рейтингов
+        StringBuilder response = new StringBuilder("Топ пользователей по рейтингу:\n");
+        for (int i = 0; i < topRatings.size(); i++) {
+            UserRating rating = topRatings.get(i);
+            response.append(i + 1).append(". ").append(rating.getUser().getUsername())
+                    .append(" - ").append(rating.getRating()).append(" очков\n");
+        }
+        return new MessageToUser(chatId, response.toString());
+    }
+
+//    public MessageToUser createUserRatingMessage(long chatId, Long userId) {
+//        int rating = userRatingService.getUserRating(userId);
+//        return new MessageToUser(chatId, "Ваш текущий рейтинг: " + rating);
+//    }
 
     public MessageToUser createMessageAccessButtons(long chatId) {
         return new MessageToUser(chatId, HELP);
@@ -149,4 +182,16 @@ public class BotMessageCreator {
     public MessageToUser createMessageInvalidCommand(long chatId, String errorMessage) {
         return new MessageToUser(chatId, "Неверно введена команда: " + errorMessage);
     }
+
+    private void updateRating(long chatId, boolean isCorrect) {
+        User user = userService.getUserByChatId(chatId);
+        if (user != null) {
+            if (isCorrect) {
+                userRatingService.updateUserRating(user.getId(), 1);
+            }
+        } else {
+            throw new IllegalArgumentException("Пользователь не найден");
+        }
+    }
 }
+

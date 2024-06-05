@@ -42,6 +42,9 @@ public class BotLogic {
                     }
                 }
             }
+            case COMMAND_RATING -> {
+                return botMessageCreator.createMessageRating(chatId);
+            }
             case COMMAND_HELP -> {
                 return botMessageCreator.createMessageAccessButtons(chatId);
             }
