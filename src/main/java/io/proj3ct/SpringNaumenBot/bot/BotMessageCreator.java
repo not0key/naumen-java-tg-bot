@@ -50,4 +50,11 @@ public class BotMessageCreator {
         return new MessageToUser(chatId, HELP);
     }
 
+    /**
+     * Создается сообщение для пользователя с текстом о недоступной команде.
+     */
+    public MessageToUser createMessageNotFoundCommand(long chatId) {
+        String answer = "Команда не найдена";
+        return new MessageToUser(chatId, answer);
+    }
 }
