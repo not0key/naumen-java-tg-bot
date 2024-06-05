@@ -17,6 +17,9 @@ public class User {
     @Column(nullable = false, unique = true)
     private Long chatId;
 
+    public User() {
+    }
+
     public User(String username, Long chatId) {
         this.username = username;
         this.chatId = chatId;

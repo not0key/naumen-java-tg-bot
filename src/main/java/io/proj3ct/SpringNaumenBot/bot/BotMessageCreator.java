@@ -110,12 +110,14 @@ public class BotMessageCreator {
         int attempts = attemptsForUser.get(questionId);
         String responseText;
 
+        int earnedPointsForQuiz = earnedPoints.getOrDefault(chatId, 0);
+
         if (question.getCorrectAnswer().equalsIgnoreCase(userAnswer)) {
             responseText = "Верно!";
             attemptsForUser.remove(questionId);
             userCurrentQuestion.remove(chatId);
-            updateRating(chatId, true); // Обновляем рейтинг пользователя за правильный ответ
-            earnedPoints.put(chatId, earnedPoints.getOrDefault(chatId, 0) + 1); // Увеличиваем количество начисленных очков за викторину
+            updateRating(chatId, true);
+            earnedPoints.put(chatId, earnedPointsForQuiz + 1);
         } else {
             attempts++;
             if (attempts < 3) {
@@ -126,7 +128,7 @@ public class BotMessageCreator {
                 responseText = "Неверно! Правильный ответ: " + question.getCorrectAnswer();
                 attemptsForUser.remove(questionId);
                 userCurrentQuestion.remove(chatId);
-                updateRating(chatId, false); // Не обновляем рейтинг пользователя за неправильный ответ
+                updateRating(chatId, false);
             }
         }
 
@@ -147,8 +149,8 @@ public class BotMessageCreator {
                     "\nВведите ваш ответ в чат.";
         } else {
             responseText += "\n\nВы ответили на все вопросы в этой викторине.";
-            int earnedPointsForQuiz = earnedPoints.getOrDefault(chatId, 0);
-            responseText += "\n\nЗа прохождение викторины вам начислено " + earnedPointsForQuiz + " очков.";
+            responseText += "\n\nЗа прохождение викторины вам начислено " + (earnedPointsForQuiz + 1) + " очков.";
+            earnedPoints.remove(chatId);
         }
 
         return new MessageToUser(chatId, responseText);
