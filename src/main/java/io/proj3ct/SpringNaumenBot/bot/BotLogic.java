@@ -30,7 +30,7 @@ public class BotLogic {
         String[] messageParts = messageText.split(" ");
         String command = messageParts[0];
 
-        switch (messageText) {
+        switch (command) {
             case COMMAND_START -> {
                 return botMessageCreator.createMessageStartWorkBot(chatId, messageFromUser.getUserName());
             }
