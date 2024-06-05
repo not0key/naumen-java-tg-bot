@@ -9,7 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static io.proj3ct.SpringNaumenBot.bot.Constants.HELP;
 import static io.proj3ct.SpringNaumenBot.bot.Constants.TEXT_START;
@@ -23,6 +25,8 @@ public class BotMessageCreator {
 
     @Autowired
     private final QuestionService questionService;
+
+    private final Map<Long, Map<Long, Integer>> userAttempts = new HashMap<>();
 
     /**
      * Создается сообщение для пользователя с текстом приветствия и списком возможных команд бота.
@@ -58,18 +62,55 @@ public class BotMessageCreator {
     }
 
     /**
-     * Создается сообщение для пользователя о начале викторины.
+     * Создается сообщение для отправки ответа на вопрос.
      */
     public MessageToUser createMessageCheckAnswer(long chatId, Long questionId, String userAnswer) {
         Question question = questionService.getQuestionById(questionId);
         if (question == null) {
             return new MessageToUser(chatId, "Недопустимый идентификатор вопроса.");
         }
+
+        userAttempts.putIfAbsent(chatId, new HashMap<>());
+        Map<Long, Integer> attemptsForUser = userAttempts.get(chatId);
+        attemptsForUser.putIfAbsent(questionId, 0);
+
+        int attempts = attemptsForUser.get(questionId);
+        String responseText;
+
         if (question.getCorrectAnswer().equalsIgnoreCase(userAnswer)) {
-            return new MessageToUser(chatId, "Верно!");
+            responseText = "Верно!";
+            attemptsForUser.remove(questionId);
         } else {
-            return new MessageToUser(chatId, "Неверно! Правильный ответ: " + question.getCorrectAnswer());
+            attempts++;
+            if (attempts < 3) {
+                attemptsForUser.put(questionId, attempts);
+                responseText = "Неверно! Попробуйте еще раз. У вас осталось " + (3 - attempts) + " попытки.";
+                return new MessageToUser(chatId, responseText);
+            } else {
+                responseText = "Неверно! Правильный ответ: " + question.getCorrectAnswer();
+                attemptsForUser.remove(questionId);
+            }
         }
+
+        List<Question> questions = questionService.getQuestionsByQuizId(question.getQuiz().getId());
+
+        int currentQuestionIndex = -1;
+        for (int i = 0; i < questions.size(); i++) {
+            if (questions.get(i).getId().equals(questionId)) {
+                currentQuestionIndex = i;
+                break;
+            }
+        }
+
+        if (currentQuestionIndex != -1 && currentQuestionIndex < questions.size() - 1) {
+            Question nextQuestion = questions.get(currentQuestionIndex + 1);
+            responseText += "\n\nСледующий вопрос: " + nextQuestion.getQuestionText() +
+                    "\nИспользуйте /answer " + nextQuestion.getId() + " [ваш ответ], чтобы ответить.";
+        } else {
+            responseText += "\n\nВы ответили на все вопросы в этой викторине.";
+        }
+
+        return new MessageToUser(chatId, responseText);
     }
 
     /**
