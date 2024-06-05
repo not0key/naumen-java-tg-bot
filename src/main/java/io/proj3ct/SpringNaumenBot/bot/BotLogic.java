@@ -2,9 +2,6 @@ package io.proj3ct.SpringNaumenBot.bot;
 
 import io.proj3ct.SpringNaumenBot.domains.message.MessageFromUser;
 import io.proj3ct.SpringNaumenBot.domains.message.MessageToUser;
-import io.proj3ct.SpringNaumenBot.services.QuestionService;
-import io.proj3ct.SpringNaumenBot.services.QuizService;
-import io.proj3ct.SpringNaumenBot.services.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -15,10 +12,6 @@ import static io.proj3ct.SpringNaumenBot.bot.Constants.*;
 public class BotLogic {
 
     private final BotMessageCreator botMessageCreator;
-//    private final UserService userService;
-//    private final QuizService quizService;
-//    private final QuestionService questionService;
-
 
     public MessageToUser onUpdateReceived(MessageFromUser messageFromUser) {
         if (messageFromUser.getMessage() == null || messageFromUser.getMessage().isEmpty()) {
@@ -36,28 +29,28 @@ public class BotLogic {
             }
             case COMMAND_QUIZ -> {
                 return botMessageCreator.createMessageGetQuizzes(chatId);
-           }
-            case COMMAND_START_QUIZ -> {
-                if (messageParts.length < 2) {
-                    return botMessageCreator.createMessageInvalidCommand(chatId, "ihgiwhegioe");
-                }
-                try {
-                    Long quizId = Long.parseLong(messageParts[1]);
-                    return botMessageCreator.createMessageStartQuiz(chatId, quizId);
-                } catch (NumberFormatException e) {
-                    return botMessageCreator.createMessageInvalidCommand(chatId, "0foeiowhfiowehfio");
-                }
             }
-            case COMMAND_ANSWER -> {
-                Long questionId = Long.parseLong(messageText.split(" ")[1]);
-                String answer = messageText.split(" ")[2];
-                return botMessageCreator.createMessageCheckAnswer(chatId, questionId, answer);
+            case COMMAND_START_QUIZ -> {
+                if (messageParts.length == 1) {
+                    return botMessageCreator.createMessageListQuiz(chatId);
+                } else {
+                    try {
+                        Long quizId = Long.parseLong(messageParts[1]);
+                        return botMessageCreator.createMessageStartQuiz(chatId, quizId);
+                    } catch (NumberFormatException e) {
+                        return botMessageCreator.createMessageInvalidCommand(chatId, "Идентификатор викторины должен быть числом.");
+                    }
+                }
             }
             case COMMAND_HELP -> {
                 return botMessageCreator.createMessageAccessButtons(chatId);
             }
             default -> {
-                return botMessageCreator.createMessageNotFoundCommand(chatId);
+                if (command.startsWith("/")) {
+                    return botMessageCreator.createMessageNotFoundCommand(chatId);
+                } else {
+                    return botMessageCreator.createMessageCheckAnswer(chatId, messageText);
+                }
             }
         }
     }

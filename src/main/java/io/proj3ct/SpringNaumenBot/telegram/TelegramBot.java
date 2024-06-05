@@ -5,11 +5,11 @@ import io.proj3ct.SpringNaumenBot.bot.BotConfig;
 import io.proj3ct.SpringNaumenBot.bot.BotLogic;
 import io.proj3ct.SpringNaumenBot.domains.message.MessageFromUser;
 import io.proj3ct.SpringNaumenBot.domains.message.MessageToUser;
-import io.proj3ct.SpringNaumenBot.services.UserService;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
 import org.telegram.telegrambots.meta.api.objects.commands.scope.BotCommandScopeDefault;
@@ -43,16 +43,34 @@ public class TelegramBot extends TelegramLongPollingBot implements Bot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        MessageFromUser message = new MessageFromUser(
-                update.getMessage().getChatId(),
-                update.getMessage().getText(),
-                update.getMessage().getChat().getFirstName()
-        );
-        MessageToUser messageToUser = botLogic.onUpdateReceived(message);
-        if (messageToUser == null) {
-            return;
+        if (update.hasMessage() && update.getMessage().hasText()) {
+            MessageFromUser message = new MessageFromUser(
+                    update.getMessage().getChatId(),
+                    update.getMessage().getText(),
+                    update.getMessage().getChat().getFirstName()
+            );
+            MessageToUser messageToUser = botLogic.onUpdateReceived(message);
+            if (messageToUser != null) {
+                if (messageToUser.getReplyMarkup() != null) {
+                    sendInlineKeyBoardMessage(messageToUser);
+                } else {
+                    this.sendMessage(messageToUser);
+                }
+            }
+        } else if (update.hasCallbackQuery()) {
+            CallbackQuery callbackQuery = update.getCallbackQuery();
+            String data = callbackQuery.getData();
+            long chatId = callbackQuery.getMessage().getChatId();
+            MessageFromUser message = new MessageFromUser(chatId, data, null);
+            MessageToUser messageToUser = botLogic.onUpdateReceived(message);
+            if (messageToUser != null) {
+                if (messageToUser.getReplyMarkup() != null) {
+                    sendInlineKeyBoardMessage(messageToUser);
+                } else {
+                    this.sendMessage(messageToUser);
+                }
+            }
         }
-        this.sendMessage(messageToUser);
     }
 
     @Override
@@ -70,7 +88,7 @@ public class TelegramBot extends TelegramLongPollingBot implements Bot {
         try {
             execute(convertMessageToUserToSendMessage(message));
         } catch (TelegramApiException e) {
-            throw new RuntimeException("Не удалось отправить сообщение. "
+            throw new RuntimeException("Не удалось отправить сообщение."
                     + e.getMessage(), e);
         }
     }
@@ -80,6 +98,19 @@ public class TelegramBot extends TelegramLongPollingBot implements Bot {
         sendMessage.setChatId(messageToUser.getChatId());
         if (messageToUser.getText() != null) sendMessage.setText(messageToUser.getText());
         return sendMessage;
+    }
+
+    private void sendInlineKeyBoardMessage(MessageToUser messageToUser) {
+        SendMessage message = new SendMessage();
+        message.setChatId(messageToUser.getChatId());
+        message.setText(messageToUser.getText());
+        message.setReplyMarkup(messageToUser.getReplyMarkup());
+        try {
+            execute(message);
+        } catch (TelegramApiException e) {
+            throw new RuntimeException("Не удалось отправить сообщение с кнопками."
+                    + e.getMessage(), e);
+        }
     }
 
 }
